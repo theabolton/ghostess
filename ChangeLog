@@ -4,6 +4,8 @@
      a LADSPA plugin found on either path.  This is to better
      support FLAM, which generates DSSI-style GUIs for LADSPA
      plugins.
+ * ghostess_universal_gui now uses its argv[0] (UI path) to find the
+     plugin DSO instead of searching DSSI_PATH or LADSPA_PATH.
 
 20120105
  * Update eyecandy.c to avoid crash on Mac OS X Snow Leopard with

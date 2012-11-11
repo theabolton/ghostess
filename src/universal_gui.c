@@ -1,6 +1,6 @@
 /* ghostess universal DSSI user interface
  *
- * Copyright (C) 2005, 2006, 2008, 2010 Sean Bolton and others.
+ * Copyright (C) 2005, 2006, 2008, 2010, 2012 Sean Bolton and others.
  *
  * Portions of this file may have come from Chris Cannam and Steve
  * Harris's public domain DSSI example code.
@@ -1208,69 +1208,33 @@ create_windows(const char *instance_tag, const char *soname, const char *label)
 /* ==== DSSI/LADSPA plugin handling ==== */
 
 int
-load_so(char *soname, char *label)
+load_so(char *ui_path, char *soname, char *label)
 {
-    char *path, *origPath, *element, *filePath;
     const char *message;
     int i;
 
     plugin_dlh = NULL;
 
-    if (soname[0] == '/') {  /* absolute path */
-        if ((plugin_dlh = dlopen(soname, RTLD_LAZY))) {
-            plugin_path = strdup(soname);
-        } else {
-            message = dlerror();
-            if (message) {
-                GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed: %s\n", soname, message);
-            } else {
-                GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed\n", soname);
-            }
-            return 0;
-        }
-    } else {  /* relative path */
-
-        if (!(path = getenv("DSSI_PATH"))) {
-            path = "/usr/local/lib/dssi:/usr/lib/dssi";
-            GDB_MESSAGE(GDB_PLUGIN, " warning: DSSI_PATH not set, defaulting to '%s'\n", path);
-        }
-        origPath = strdup(path);
-        path = origPath;
-
-        while ((element = strtok(path, ":")) != 0) {
-
-            path = 0;
-
-            if (element[0] != '/') {
-                GDB_MESSAGE(GDB_PLUGIN, ": ignoring DSSI_PATH relative element '%s'\n", element);
-                continue;
-            }
-
-            filePath = (char *)malloc(strlen(element) + strlen(soname) + 2);
-            sprintf(filePath, "%s/%s", element, soname);
-
-            if ((plugin_dlh = dlopen(filePath, RTLD_LAZY))) {
-                plugin_path = filePath;
-                break;
-            }
-
-            message = dlerror();
-            if (message) {
-                GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed: %s\n", filePath, message);
-            } else {
-                GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed\n", filePath);
-            }
-
-            free(filePath);
-        }
-
-        free(origPath);
-
-        if (!plugin_dlh) {
-            GDB_MESSAGE(GDB_PLUGIN, ": plugin '%s' not found\n", soname);
-            return 0;
-        }
+    if (g_path_is_absolute(soname)) {
+        plugin_path = soname;
+    } else {  /* build .so path from ui path */
+        char *uidir = g_path_get_dirname(ui_path);
+        char *sodir = g_path_get_dirname(uidir);
+        plugin_path = g_build_filename(sodir, soname, NULL);
+        g_free(sodir);
+        g_free(uidir);
     }
+
+    if ((plugin_dlh = dlopen(plugin_path, RTLD_LAZY)) == NULL) {
+        message = dlerror();
+        if (message) {
+            GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed: %s\n", soname, message);
+        } else {
+            GDB_MESSAGE(GDB_PLUGIN, ": dlopen of '%s' failed\n", soname);
+        }
+        return 0;
+    }
+
     GDB_MESSAGE(GDB_PLUGIN, ": '%s' found at '%s'\n", soname, plugin_path);
 
     plugin_descfn = (DSSI_Descriptor_Function)dlsym(plugin_dlh,
@@ -1350,8 +1314,8 @@ main(int argc, char *argv[])
     }
 
     /* load and analyze plugin */
-    if (!load_so(argv[2], argv[3])) {
-        fprintf(stderr, "ghostess uniGUI fatal: can't load plugin %s:%s\n", argv[2], argv[3]);
+    if (!load_so(argv[0], argv[2], argv[3])) {
+        fprintf(stderr, "ghostess uniGUI fatal: can't load plugin %s:%s for UI %s\n", argv[2], argv[3], argv[0]);
         exit(1);
     }
     /* GDB_MESSAGE(GDB_PLUGIN, ": plugin has %lu ports\n", plugin_descriptor->LADSPA_Plugin->PortCount); */
