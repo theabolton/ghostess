@@ -72,6 +72,13 @@ create_main_window (const char *tag, int instance_count)
   GtkWidget *scrolledwindow1;
   GtkWidget *viewport1;
   GtkAccelGroup *accel_group;
+  GdkPixbuf *icon;
+
+  if ((icon = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
+                                       "ghostess", 32, 0, NULL)) != NULL) {
+      gtk_window_set_default_icon(icon);
+      g_object_unref(icon);
+  }
 
   accel_group = gtk_accel_group_new ();
 

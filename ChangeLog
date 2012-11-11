@@ -1,3 +1,7 @@
+20121110
+ * Added support for a default window icon, and included an icon file
+     (32x32 only for now, not installing).
+
 20120330
  * ghostess now searches for plugins on both DSSI_PATH and
      LADSPA_PATH (in that order), and will load a DSSI-style UI for
