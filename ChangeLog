@@ -1,0 +1,66 @@
+20120105
+ * Update eyecandy.c to avoid crash on Mac OS X Snow Leopard with
+     GTK+ 2.24.8.
+ * Goldbug! (Add '-ldl -lm' to link flags.)
+ * Default port value setting did not respect LADSPA_HINT_INTEGER.
+ * Added notification at startup of which MIDI source ghostess is
+     using.
+
+20100923
+ * On some OSes (OS X, and maybe Apple iOS), dlopen() defaults to
+     RTLD_GLOBAL, unlike practically the entire rest of the known
+     universe, which defaults to RTLD_LOCAL.  Yes, it's allowed by
+     POSIX, but what the hell were they thinking?
+
+20100905
+ * Configuration file saving and loading is more locale-flexible:
+     floating-point numbers are always written using '.' for the
+     decimal point, regardless of locale setting, and when they are
+     read, either '.' or the locale-specific decimal point may be
+     used.
+ * Added a manual page.
+
+20100326
+ * Added JACK session management support from Torben Hohn.
+ * Cleaned up source copyright and license notices.
+
+20081213
+ * Added 'sample-rate' OSC method.
+ * Using nice cairo knobs in universal_gui (requires GTK+ 2.8.0).
+
+20081210
+ * Fixed incoming OSC method handling to echo messages that come
+     from a source other than our 'known' UI to the known UI.
+
+20081209
+ * Removed obsolete automake/autoconf macros.
+
+20081205
+ * Changed to use jack_client_open() instead of deprecated
+     jack_client_new() (requires jack >=0.99.14).
+ * Fixed output port connection to avoid JACK MIDI ports.
+
+20081029
+ * Dmitry Baikov's fixes for ALSA client type (now 'application')
+     and JACK MIDI API changes.
+ * Added test note widgets to ghostess_universal_gui.
+
+20061127
+ * Updated JACK MIDI API support, and added autoconf detection.
+ * Fixed a bug in the MIDI de-jitter code.
+ * Added blinkies for MIDI activity.
+ * Added patch list export for freewheeling.
+
+20050916
+ * Added a '-noauto' command line option to disable automatic
+     connection of output ports to JACK physical output ports.
+ * 'About ghostess' now shows host OSC URL and MIDI connection
+     method.
+
+20050531
+ * Quickly added somewhat-messy JACK MIDI support.  Argh, but this
+     thing needs a ground up rewrite!
+
+20050516
+ * Chris Hixon's controlInsTotal fix
+

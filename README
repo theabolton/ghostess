@@ -1,0 +1,186 @@
+ghostess - A GUI host for DSSI plugins
+======================================
+Copyright (C) 2012 by Sean Bolton and others.
+
+This is sloppy, hurried HACKWARE -- please do not consider
+this exemplary of the authors' skills or preferences, nor
+of good DSSI or general programming practices. (In particular,
+I don't want anyone attributing my mess to Chris or Steve ;-)
+
+ghostess is licensed under the GNU General Public License,
+version 2 or later, and comes with ABSOLUTELY NO WARRANTY,
+including fitness for any particular purpose. See the
+enclosed file COPYING for details.
+
+New Stuff
+=========
+- ghostess works with JACK session managament, assuming
+    you have a new enough version of JACK, and configure finds
+    jack/session.h.
+
+- ghostess works with JACK MIDI. To build it, use:
+    - JACK version 0.105.0 or newer.
+    - pkgconfig, liblo 0.18, and DSSI 0.9 or later.
+    - if './configure --with-jackmidi' detects the
+        jack_midi_get_event_count() function in your libjack.so,
+        then ghostess will be built with JACK MIDI support, omitting
+        the ALSA or CoreMIDI driver.
+
+- ghostess can now export an XML patchlist for use by Freewheeling.
+
+- blinkin' lights show MIDI activity for each instance.
+
+- ghostess works on OS X.  To build it, I used:
+    - pkgconfig, with PKG_CONFIG_PATH set appropriately (Gentoo OS-X)
+    - liblo installed (liblo-0.18 from Gentoo OS-X)
+    - JACK (JackOSX 0.61)
+    - DSSI 0.9
+    - libdssialsacompat 1.0.8a
+    - './configure && make && make install'
+    - Note that to use the CoreMIDI driver, you need to start
+        ghostess _after_ any virtual sources you want to connect
+        from, since my stupid CoreMIDI driver just connects to all
+        existing sources when it starts up.
+
+
+Quick-and-Dirty Intro
+=====================
+This assumes you are familiar with jack-dssi-host.  ghostess and
+jack-dssi-host both descended from the same dssi_example_host
+source, and in many ways are still very similar.  A summary of
+the differences (as of 2005/4/11):
+
+* ghostess is GPL, jack-dssi-host is BSD-ish.
+
+* ghostess uses GNU autotools. Use the usual './configure && make &&
+    make install' to build.
+
+* ghostess has a simple GTK+ GUI.  Click on the 'UI' button for any
+    instance to launch or hide its UI.  Right-click on the 'UI'
+    button for more options.
+
+* ghostess comes with a minimal universal DSSI GUI (installed as
+    <prefix>/bin/ghostess_universal_gui) that can be used with any
+    DSSI or LADSPA plugin.  It does not read RDF files or
+    instantiate the plugin, so it's not as full-featured as a
+    universal GUI could be, but it does allow for adjusting
+    DSSI/LADSPA ports, selecting bank and program (for plugins with
+    select_program()), and sending test notes (for plugins with any
+    of the run_synth() functions).
+
+    If ghostess cannot find a UI for a plugin, and the universal GUI
+    is in the PATH, ghostess will launch it.
+
+* ghostess allows specification of the MIDI channel for each plugin
+    instance, allowing layering of multiple synths per channel.
+
+* ghostess allows specification of initial configure, program, and
+    port values from the command line.  See below for a description
+    of the syntax.
+
+* ghostess tracks configure items set on startup or sent by plugin
+    UIs.
+
+* ghostess, through its 'Save Configuration...' menu option, can
+    save the current configuration of its plugins.  Basically, it
+    just writes a Bourne shell script that can be used to start a
+    (mostly) identical session.
+
+* ghostess creates a separate MIDI reception thread, and makes it
+    low-priority SCHED_FIFO if possible (ALSA-only, at the moment).
+
+* ghostess has a (clumsy but functional) CoreMIDI driver, allowing
+    its use on Mac OS X.
+
+* ghostess double-forks its plugin UIs, putting them in separate
+    process groups, and it does not SIGHUP everything on shutdown.
+    jack-dssi-host keeps the UIs in its process group, and SIGHUPs
+    them all as it exits (Linux-only, at the moment).
+
+* jack-dssi-host uses dual gettimeofday()s in the MIDI and audio
+    process threads to do event dejittering, which seems expensive.
+    ghostess uses jack_frame_time() and jack_last_frame_time(). This
+    means ghostess needs JACK 0.99.0 or newer.
+
+* ghostess uses the LADSPA plugin Label and port Names when creating
+    JACK port names, hopefully resulting in short-but-useful port
+    names.
+
+* unlike jack-dssi-host, ghostess will not automatically load a
+    plugin if it is invoked without arguments via a symlink of the
+    same name as the plugin.
+
+* ghostess passes the JACK audio input buffers directly to plugins,
+    eliminating a memcpy() that jack-dssi-host does.
+
+* jack-dssi-host includes ~/.dssi in its default for DSSI_PATH,
+    ghostess does not.
+
+'Save Configuration...' File Format
+===================================
+Below is an example of the Bourne shell script saved by 'Save
+Configuration...', which demonstrates almost all of ghostess's
+options. Refer to the enclosed ghostess.1 manual page for a
+description of each option.
+
+#!/bin/sh
+DSSI_PATH='/opt/audio/lib/dssi'
+export DSSI_PATH
+exec /tmp/dssi/bin/ghostess \
+ -hostname 'ghostess_test' \
+ -projdir '/home/smbolton/dssi' \
+-comment 'hexter/hexter/inst00' \
+ -chan 0 \
+ -conf 'monophonic' 'on' \
+ -conf 'GLOBAL:polyphony' '13' \
+ -prog 0 0 \
+ -port 1 440 \
+ -port 2 0 \
+ 'hexter.so':'hexter' \
+-comment 'fluidsynth-dssi/FluidSynth-DSSI/inst01' \
+ -chan 3 \
+ -conf 'load' '/t/soundfonts/Mega25.sf2' \
+ -prog 0 0 \
+ 'fluidsynth-dssi.so':'FluidSynth-DSSI' \
+-comment 'lp4pole_1671/lp4pole_fcrcia_oa/inst02' \
+ -chan 1 \
+ -port 0 1600 \
+ -port 1 4 \
+ '/usr/lib/ladspa/lp4pole_1671.so':'lp4pole_fcrcia_oa' \
+-comment 'xsynth-dssi/Xsynth/inst03' \
+ -chan 4 \
+ -prog 0 0 \
+ -port 1 0.996955 \
+ -port 2 2 \
+ -port 3 0.5 \
+ -port 4 1.00305 \
+ -port 5 2 \
+ -port 6 0.5 \
+ -port 7 0 \
+ -port 8 0.5 \
+ -port 9 0.1 \
+ -port 10 0 \
+ -port 11 0 \
+ -port 12 0 \
+ -port 13 0.0002 \
+ -port 14 0.1 \
+ -port 15 1 \
+ -port 16 1e-04 \
+ -port 17 0 \
+ -port 18 0 \
+ -port 19 14.5722 \
+ -port 20 0.1 \
+ -port 21 0.1 \
+ -port 22 1 \
+ -port 23 0.1 \
+ -port 24 0 \
+ -port 25 0 \
+ -port 26 1e-06 \
+ -port 27 11.4258 \
+ -port 28 0.388616 \
+ -port 29 1 \
+ -port 30 0.984375 \
+ -port 31 0.5 \
+ -port 32 440 \
+ 'xsynth-dssi.so':'Xsynth' \
+

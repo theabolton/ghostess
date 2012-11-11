@@ -1,0 +1,52 @@
+ghostess - A GUI host for DSSI plugins
+======================================
+Copyright (C) 2009 by Sean Bolton and others.
+
+This is sloppy, hurried HACKWARE -- please do not consider
+this exemplary of the authors' skills or preferences, nor
+of good DSSI or general programming practices. (In particular,
+I don't want anyone attributing my mess to Chris or Steve ;-)
+
+ghostess is licensed under the GNU General Public License,
+version 2 or later, and comes with ABSOLUTELY NO WARRANTY,
+including fitness for any particular purpose. See the
+enclosed file COPYING for details.
+
+ghostess began life as dssi_example_host from the DSSI 0.1
+distribution, which was a fine program written by Chris Cannam and
+Steve Harris.
+
+Then I started hacking on it.  First I hacked support for
+run_multiple_synths() into it, which made it a mess.  This would
+have been a great time for a ground-up rewrite, but that didn't
+happen. Then I hacked a simple GUI into it, which made it even more
+messy.  Then I threw in configuration saving, for yet more messiness.
+Then I added a CoreMIDI driver -- more mess.  Then I mixed in JACK
+MIDI support -- another layer of more mess.  And still no ground-up
+rewrite.
+
+Contributions have come from:
+
+- configure.ac fix from Gentoo Pro Audio Overlay
+
+- execlp fix for 64 bit architectures from Dmitry Baikov
+
+- XML patch list export by JP Mercury
+
+- ALSA client type and JACK MIDI API fixes from Dmitry Baikov
+
+- JACK session support by Torben Hohn
+
+GPL-licensed code was borrowed from:
+
+- Ardour, copyright (C) 1999-2002 Paul Davis.
+
+- aube, copyright (c) 2002 Conrad Parker.
+
+- gAlan 0.2.0, copyright (C) 1999 Tony Garnock-Jones.
+
+- midisine.c, copyright (C) 2004 Ian Esten.
+
+- Rosegarden-4, copyright (C) 2000-2004 Guillaume Laurent,
+    Chris Cannam, and Richard Bown.
+
