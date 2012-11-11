@@ -128,6 +128,7 @@ int   debug_flags = GDB_ERROR;  /* default is errors only */
 int   autoconnect = 1;
 
 char *dssi_path = NULL;
+char *ladspa_path = NULL;
 char *project_directory = NULL;
 
 int   main_timeout_tick = 0;
@@ -664,23 +665,64 @@ void session_callback( jack_session_event_t *event, void *arg )
 #define RTLD_LOCAL  (0)
 #endif
 
+static char *
+search_path(const char *paths, const char *name, void **dll)
+{
+    gchar **elem;
+    int i;
+    char *path, *file;
+    void *handle;
+    const char *message;
+
+    elem = g_strsplit(paths, ":", 0);
+
+    for (i = 0; elem[i]; i++) {
+        path = elem[i];
+
+        if (strlen(path) == 0)
+            continue;
+        if (!g_path_is_absolute(path)) {
+            ghss_debug(GDB_DSSI, ": ignoring plugin search path relative element '%s'", path);
+            continue;
+        }
+
+        file = g_build_filename(path, name, NULL);
+
+        handle = dlopen(file, RTLD_NOW |    /* real-time programs should not use RTLD_LAZY */
+                              RTLD_LOCAL);  /* do not share symbols across plugins */
+        if (handle) {
+            ghss_debug(GDB_DSSI, ": '%s' found at '%s'", name, file);
+            *dll = handle;
+            path = g_strdup(path);
+            g_free(file);
+            g_strfreev(elem);
+            return path;
+        }
+        
+        message = dlerror();
+        if (message) {
+            ghss_debug(GDB_DSSI, ": dlopen of '%s' failed: %s", file, message);
+        } else {
+            ghss_debug(GDB_DSSI, ": dlopen of '%s' failed", file);
+        }
+        
+        g_free(file);
+    }
+    
+    g_strfreev(elem);
+    return NULL;
+}
+
 char *
 load(const char *dllName, void **dll) /* returns directory where dll found */
 {
-    char *path, *origPath, *element, *filePath;
+    char *path;
     const char *message;
 
-    *dll = 0;
-
-    if (dllName[0] == '/') {  /* absolute path */
+    if (g_path_is_absolute(dllName)) {
 	if ((*dll = dlopen(dllName, RTLD_NOW |       /* real-time programs should not use RTLD_LAZY */
                                     RTLD_LOCAL))) {  /* incredibly, some systems default to RTLD_GLOBAL **cough**Apple** */
-            path = strdup(dllName);
-            if (strrchr(dllName, '/') == dllName)
-                path[1] = 0;
-            else
-                *strrchr(path, '/') = 0;
-	    return path;
+	    return g_path_get_dirname(dllName);
 	} else {
             message = dlerror();
             if (message) {
@@ -696,41 +738,14 @@ load(const char *dllName, void **dll) /* returns directory where dll found */
         dssi_path = "/usr/local/lib/dssi:/usr/lib/dssi";
         ghss_debug(GDB_DSSI, " warning: DSSI_PATH not set, defaulting to '%s'", dssi_path);
     }
-    path = strdup(dssi_path);
-    origPath = path;
+    if ((path = search_path(dssi_path, dllName, dll)) != NULL)
+        return path;
 
-    while ((element = strtok(path, ":")) != 0) {
-
-        path = 0;
-
-        if (element[0] != '/') {
-            ghss_debug(GDB_DSSI, ": ignoring DSSI_PATH relative element '%s'", element);
-            continue;
-        }
-
-        filePath = (char *)malloc(strlen(element) + strlen(dllName) + 2);
-        sprintf(filePath, "%s/%s", element, dllName);
-
-        if ((*dll = dlopen(filePath, RTLD_NOW | RTLD_LOCAL))) {
-            ghss_debug(GDB_DSSI, ": '%s' found at '%s'", dllName, filePath);
-            free(filePath);
-            path = strdup(element);
-            free(origPath);
-            return path;
-        }
-
-        message = dlerror();
-        if (message) {
-            ghss_debug(GDB_DSSI, ": dlopen of '%s' failed: %s", filePath, message);
-        } else {
-            ghss_debug(GDB_DSSI, ": dlopen of '%s' failed", filePath);
-        }
-
-        free(filePath);
+    if (!ladspa_path && !(ladspa_path = getenv("LADSPA_PATH"))) {
+        ladspa_path = "/usr/local/lib/ladspa:/usr/lib/ladspa";
+        ghss_debug(GDB_DSSI, " warning: LADSPA_PATH not set, defaulting to '%s'", ladspa_path);
     }
-
-    free(origPath);
-    return NULL;
+    return search_path(ladspa_path, dllName, dll);
 }
 
 static void
@@ -920,9 +935,14 @@ write_configuration(char *filename, const char *uuid)
 
     if ((fp = fopen(filename, "w")) == NULL) goto error;
     if (fprintf(fp, "#!/bin/sh\n") < 0) goto error;
+    /* -FIX- this shouldn't really be saved in the .ghss: */
     if (dssi_path) {
         escape_for_shell(&arg1, dssi_path);
         if (fprintf(fp, "DSSI_PATH=%s\nexport DSSI_PATH\n", arg1) < 0) goto error;
+    }
+    if (ladspa_path) {
+        escape_for_shell(&arg1, ladspa_path);
+        if (fprintf(fp, "LADSPA_PATH=%s\nexport LADSPA_PATH\n", arg1) < 0) goto error;
     }
     if (fprintf(fp, "exec %s \\\n", host_argv0) < 0) goto error;
     if (strcmp(host_name, host_name_default)) {
