@@ -1,6 +1,6 @@
 /* ghostess - A GUI host for DSSI plugins.
  *
- * Copyright (C) 2005, 2006, 2009, 2012 Sean Bolton and others.
+ * Copyright (C) 2005, 2006, 2009, 2012, 2021 Sean Bolton and others.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -30,23 +30,23 @@
 int
 midi_open(void)
 {
-    midi_input_port = jack_port_register (jackClient, "midi_in",
-                                          JACK_DEFAULT_MIDI_TYPE,
-                                          JackPortIsInput, 0);
-    if (!midi_input_port) {
+    jack_midi_input_port = jack_port_register (jackClient, "midi_in",
+                                               JACK_DEFAULT_MIDI_TYPE,
+                                               JackPortIsInput, 0);
+    if (!jack_midi_input_port) {
         ghss_debug(GDB_ERROR, " midi_open: Failed to create JACK MIDI port!");
 	return 0;
     }
 
     /* Set up ALSA snd_seq_event_t encoder */
-    if (!alsa_encoder) {
-        if (snd_midi_event_new(3, &alsa_encoder)) {
+    if (!jack_alsa_encoder) {
+        if (snd_midi_event_new(3, &jack_alsa_encoder)) {
             ghss_debug(GDB_ERROR, " midi_open: Failed to initialize ALSA MIDI encoder!");
             return 0;
         }
     }
 
-    snd_midi_event_reset_encode(alsa_encoder);
+    snd_midi_event_reset_encode(jack_alsa_encoder);
 
     ghss_debug(GDB_ALWAYS, ": listening using JACK MIDI");
 

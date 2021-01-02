@@ -1,6 +1,6 @@
 /* ghostess - A GUI host for DSSI plugins.
  *
- * Copyright (C) 2005, 2006, 2008, 2010, 2012 Sean Bolton and others.
+ * Copyright (C) 2005, 2006, 2008, 2010, 2012, 2021 Sean Bolton and others.
  *
  * This is sloppy, hurried HACKWARE -- please do not consider
  * this exemplary of the authors' skills or preferences, nor of
@@ -83,8 +83,8 @@
        jack_client_t *jackClient;
 static jack_port_t  **inputPorts, **outputPorts;
 #ifdef MIDI_JACK
-       jack_port_t   *midi_input_port;
-       snd_midi_event_t *alsa_encoder;
+       jack_port_t   *jack_midi_input_port;
+       snd_midi_event_t *jack_alsa_encoder;
 #endif /* MIDI_JACK */
 char  *jack_session_uuid = NULL;
 static float          sample_rate;
@@ -236,7 +236,7 @@ audio_callback(jack_nframes_t nframes, void *arg)
     jack_nframes_t last_frame_time = jack_last_frame_time(jackClient);
     unsigned int last_tick_offset = 0;
 #ifdef MIDI_JACK
-    void* midi_port_buf = jack_port_get_buffer(midi_input_port, nframes);
+    void* midi_port_buf = jack_port_get_buffer(jack_midi_input_port, nframes);
     jack_midi_event_t jack_midi_event;
     jack_nframes_t jack_midi_event_index = 0;
     jack_nframes_t jack_midi_event_count = jack_midi_get_event_count(midi_port_buf);
@@ -269,7 +269,7 @@ audio_callback(jack_nframes_t nframes, void *arg)
             jack_midi_event_index++;
 
             jack_seq_event = jack_seq_event_holder;
-            count = snd_midi_event_encode(alsa_encoder, jack_midi_event.buffer,
+            count = snd_midi_event_encode(jack_alsa_encoder, jack_midi_event.buffer,
                                           jack_midi_event.size, jack_seq_event);
             if (count) {
                 jack_seq_event->time.tick = jack_midi_event.time;

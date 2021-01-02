@@ -1,6 +1,6 @@
 /* ghostess - A GUI host for DSSI plugins.
  *
- * Copyright (C) 2005, 2006, 2008, 2010 Sean Bolton and others.
+ * Copyright (C) 2005, 2006, 2008, 2010, 2021 Sean Bolton and others.
  *
  * Portions of this file may have come from the following sources:
  * - The DSSI example code, by Chris Cannam and Steve Harris (public
@@ -176,8 +176,8 @@ struct _d3h_instance_t {
 /* in ghostess.c: */
 extern jack_client_t  *jackClient;
 #ifdef MIDI_JACK
-       jack_port_t    *midi_input_port;
-       snd_midi_event_t *alsa_encoder;
+extern jack_port_t    *jack_midi_input_port;
+extern snd_midi_event_t *jack_alsa_encoder;
 #endif /* MIDI_JACK */
 
 extern char           *host_name_default;
