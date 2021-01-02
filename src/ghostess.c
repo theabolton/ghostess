@@ -315,7 +315,7 @@ audio_callback(jack_nframes_t nframes, void *arg)
         }
 
         if (jack_seq_event && osc_seq_event) {
-            if (jack_seq_event->time.tick < jack_seq_event->time.tick) {
+            if (jack_seq_event->time.tick < osc_seq_event->time.tick) {
                 ev = jack_seq_event;
                 jack_seq_event = NULL;
             } else {
