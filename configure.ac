@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(ghostess, 20120105, musound-at-jps-dot-net)
+AC_INIT(ghostess, 20210101, sean-at-smbolton-dot-com)
 
 AC_CONFIG_SRCDIR(src/ghostess.c)
 AM_INIT_AUTOMAKE
